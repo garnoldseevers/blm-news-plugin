@@ -100,6 +100,17 @@
 	add_shortcode( 'news_articles', 'news_articles_shortcode' );
 
 	/** The Shortcode Function */
-	
+	function news_articles_shortcode() {
+
+		/* use ob_start to convert HTML content to string */
+		ob_start();
+		?> 
+			<p>
+				News Articles
+			</p>
+		<?php
+		/* display result of ob_start */
+		return ob_get_clean();
+	}
 
 ?>
