@@ -128,7 +128,7 @@ function news_articles_shortcode() {
 		"
 		SELECT * 
 		FROM $table_name
-		ORDER BY na_order, na_publish_date
+		ORDER BY na_order ASC, na_publish_date DESC
 		"
 	);
 
@@ -158,7 +158,10 @@ function news_articles_shortcode() {
 					}
 					?>
 					<span class="news-article-publish-date" itemprop="datePublished">
-						<?php echo $news_article->na_publish_date; ?>
+						<?php 
+							$article_date = date_create($news_article->na_publish_date);
+							echo date_format($article_date,"n/j/Y"); 
+						?>
 					</span>
 					<span class="news-article-title" itemprop="headline">
 						<?php echo $news_article->na_title; ?>
@@ -179,28 +182,19 @@ function news_articles_shortcode() {
 	foreach ( $news_articles as $news_article ){
 		if($news_article->na_article_url != ""){
 		?>
-			<article class="news-article featured" itemscope itemtype="http://schema.org/Article">
+			<article class="news-article" itemscope itemtype="http://schema.org/Article">
 				<a href="<?php echo $news_article->na_article_url; ?>" itemprop="url">
-					<?php if($news_article->na_image_url != ""){
-						?>
-						<img src="<?php echo $news_article->na_image_url; ?>" alt="<?php echo $news_article->na_publication; ?>" itemprop="image"/>
-						<?php 
-					}else{
-						?>
-						<span class="news-article-publication" itemprop="publisher">
-							<?php echo $news_article->na_publication; ?>
-						</span>
-						<?php
-					}
-					?>
-					<span class="publication-date" itemprop="datePublished">
-						<?php echo $news_article->na_publish_date; ?>
-					</span>
 					<span class="news-article-title" itemprop="headline">
 						<?php echo $news_article->na_title; ?>
 					</span>
-					<span class="news-article-author" itemprop="author">
-						<?php echo $news_article->na_author; ?>
+					<span class="news-article-publication" itemprop="publisher">
+						<?php echo " - ".$news_article->na_publication; ?>
+					</span>
+					<span class="publication-date" itemprop="datePublished">
+						<?php 
+							$article_date = date_create($news_article->na_publish_date);
+							echo date_format($article_date,"n/j/Y"); 
+						?>
 					</span>
 				</a>
 			</article>
