@@ -39,6 +39,7 @@ $sql = "CREATE TABLE $table_name (
   na_title tinytext NOT NULL,
   na_publish_date date NOT NULL,
   na_author tinytext NOT NULL,
+  na_blurb text NOT NULL,
   na_feature mediumint(9) NOT NULL,
   na_order mediumint(9) NOT NULL,
   PRIMARY KEY  (id)
