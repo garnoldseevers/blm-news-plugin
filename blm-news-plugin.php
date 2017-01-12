@@ -95,13 +95,80 @@ function display_admin_page() {
 	if ( !current_user_can( 'manage_options' ) )  {
 		wp_die( __( 'You do not have sufficient permissions to access this page.' ) );
 	}
+	global $wpdb;
+  	$table_name = $wpdb->prefix . "news_articles_table";
+  	/*
+  		Confirm Delete Page
+  	*/
+	if($_GET['delete'] && $_GET['delete'] != ""){
+		$id_to_delete = filter_input(INPUT_GET, 'delete');
+		$news_articles = $wpdb->get_results( 
+			"
+			SELECT * 
+			FROM $table_name
+			WHERE id = $id_to_delete
+			ORDER BY na_order ASC, na_publish_date DESC
+			"
+		);
+		?>
+		<div class="wrap">
+			<h1 class="wp-heading-inline">Delete News Articles</h1>
+		</div>
+		<?php
+		foreach ( $news_articles as $news_article ){
+			?>
+			<p>
+				Are you sure that you want to delete <?php echo $news_article->na_title; ?>
+			</p>
+			<a href="<?php echo admin_url(); ?>admin.php?page=news-articles-admin-page&confirmed_delete=<?php echo $news_article->id; ?>">Delete</a>
+			<a href="<?php echo admin_url(); ?>admin.php?page=news-articles-admin-page" class="page-title-action">Cancel</a>
+			<?php
+		}
+		?>
+		</div><!-- .wrap -->
+		<?php
+		exit();
+	}
+	?>
+	<?php
+  	/*
+  		Delete Page
+  	*/
+	if($_GET['confirmed_delete'] && $_GET['confirmed_delete'] != ""){
+		$id_to_delete = filter_input(INPUT_GET, 'confirmed_delete');
+		$news_articles = $wpdb->get_results( 
+			"
+			SELECT * 
+			FROM $table_name
+			WHERE id = $id_to_delete
+			ORDER BY na_order ASC, na_publish_date DESC
+			"
+		);
+		?>
+		<div class="wrap">
+			<h1 class="wp-heading-inline">News Article Deleted</h1>
+		</div>
+		<?php
+		foreach ( $news_articles as $news_article ){
+			?>
+			<p>
+				<?php echo $news_article->na_title; ?> has been deleted
+			</p>
+			<a href="<?php echo admin_url(); ?>admin.php?page=news-articles-admin-page" class="page-title-action">View All Articles</a>
+			<a href="<?php echo admin_url(); ?>admin.php?page=news-articles-add-page" class="page-title-action">Add Another</a>
+			<?php
+			$wpdb->delete( $table_name, array( 'id' => $news_article->id ) );
+		}
+		?>
+		</div><!-- .wrap -->
+		<?php
+		exit();
+	}
 	?>
 	<div class="wrap">
 		<h1 class="wp-heading-inline">News Articles</h1>
 		<a href="<?php echo admin_url(); ?>admin.php?page=news-articles-add-page" class="page-title-action">Add New</a>
 		<?php
-		global $wpdb;
-	  	$table_name = $wpdb->prefix . "news_articles_table";
 		$pagenum = isset( $_GET['pagenum'] ) ? absint( $_GET['pagenum'] ) : 1;
 		$limit = 20; // number of rows in page
 		$offset = ( $pagenum - 1 ) * $limit;
@@ -125,13 +192,14 @@ function display_admin_page() {
 					<tr>
 						<td class="iedit hentry title has-row-actions column-title column-primary page-title">
 							<?php echo $entry->na_title; ?>
-							<!--<div class="row-actions">
-								<span class="edit">
+							<div class="row-actions">
+								<!--<span class="edit">
 									<a href="">Edit</a> | 
+								</span>-->
 								<span class="trash">
-									<a href="">Delete</a>
+									<a href="<?php echo admin_url(); ?>admin.php?page=news-articles-admin-page&delete=<?php echo $entry->id; ?>">Delete</a>
 								</span>
-							</div>-->
+							</div>
 						</td>
 						<td class="hentry" style="width: 20%;">
 							<?php echo $entry->na_publication; ?>
@@ -175,22 +243,131 @@ function display_admin_page() {
 			?>
 		</table>
 	</div>
-}
-
-/** The code that displays the add new page */
-function display_add_new_page() {
-	if ( !current_user_can( 'manage_options' ) )  {
-		wp_die( __( 'You do not have sufficient permissions to access this page.' ) );
-	}
-	?>
-	<div class="wrap">
-	<p>NEWS ARTICLE ENTRY FORM</p>
-	</div>
 	<?php
 }
 
 /** 
-Shortcode 
+
+	Add New Page
+	
+*/
+function display_add_new_page() {
+	if ( !current_user_can( 'manage_options' ) )  {
+		wp_die( __( 'You do not have sufficient permissions to access this page.' ) );
+	}
+	global $wpdb;
+  	$table_name = $wpdb->prefix."news_articles_table";
+	if( !empty($_POST)){
+		$na_article_url = sanitize_text_field( $_POST['na_article_url'] );
+		$na_image_url = sanitize_text_field( $_POST['na_image_url'] );
+		$na_publication = sanitize_text_field( $_POST['na_publication'] );
+		$na_title = sanitize_text_field( $_POST['na_title'] );
+		$na_publish_date = sanitize_text_field( $_POST['na_publish_date'] );
+		$na_author = sanitize_text_field( $_POST['na_author'] );
+		$na_blurb = sanitize_text_field( $_POST['na_blurb'] );
+		$na_feature = sanitize_text_field( $_POST['na_feature'] );
+		$na_order = sanitize_text_field( $_POST['na_order']);
+		$wpdb->insert($table_name, array('na_article_url' => $na_article_url,'na_image_url' => $na_image_url,'na_publication' => $na_publication,'na_title' => $na_title,'na_publish_date' => $na_publish_date,'na_author' => $na_author,'na_blurb' => $na_blurb,'na_feature' => $na_feature,'na_order' => $na_order,));
+		?>
+		<div class="wrap">
+			<h1 class="wp-heading-inline">News Article Added</h1>
+		</div>
+		<a href="<?php echo admin_url(); ?>admin.php?page=news-articles-add-page" class="page-title-action">Add Another</a>
+		<a href="<?php echo admin_url(); ?>admin.php?page=news-articles-admin-page" class="page-title-action">View All Articles</a>
+		<?php
+	}else{
+		?>
+		<div class="wrap">
+			<h1 class="wp-heading-inline">Add New News Article</h1>
+			<form name="post" action="<?php echo $_SERVER['PHP_SELF']; ?>?page=news-articles-add-page" method="post" id="post">
+				<table class="form-table">
+					<tbody>
+						<tr>
+							<th scope="row">
+								<label for="na_article_url">Article URL</label>
+							</th>
+							<td>
+								<input name="na_article_url" type="text" class="regular-text" />
+								<p class="description">Enter the entire url of the article, complete with http://</p>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row">
+								<label for="na_publication">Publication</label>
+							</th>
+							<td>
+								<input name="na_publication" type="text" class="regular-text" />
+								<p class="description">Enter the name of the blog where the article is hosted</p>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row">
+								<label for="na_title">Title</label>
+							</th>
+							<td>
+								<input name="na_title" type="text" class="regular-text" />
+								<p class="description">Enter the title of the article</p>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row">
+								<label for="na_publish_date">Publication Date</label>
+							</th>
+							<td>
+								<input name="na_publish_date" type="date" />
+								<p class="description">Enter the date that the article was published</p>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row">
+								<label for="na_author">Author</label>
+							</th>
+							<td>
+								<input name="na_author" type="text" class="regular-text" />
+								<p class="description">Enter the name of the person who wrote the article</p>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row">
+								<label for="na_blurb">Excerpt</label>
+							</th>
+							<td>
+								<textarea name="na_blurb"/></textarea>
+								<p class="description">Enter an eexcerpt of the article to display</p>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row">
+								<label for="na_feature">Feature this Article</label>
+							</th>
+							<td>
+								<input type='hidden' value='0' name='na_feature'>
+								<input type='checkbox' name='na_feature' value='1'>
+								<p class="description">Place this article in the "featured" section</p>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row">
+								<label for="na_order">Order</label>
+							</th>
+							<td>
+								<input name="na_order" type="text" class="regular-text" />
+								<p class="description">influence the order of the article by giving it a higher number</p>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+				<?php submit_button(); ?>
+			</form>
+		</div>
+		<?php
+	}
+}
+
+/** 
+
+	Shortcode 
+
 */
 
 /** Register the shortcode with WordPress */
@@ -209,10 +386,17 @@ function news_articles_shortcode() {
 	}
 }
 
-
+/* Shortcode output if featured articles are selected */
 function display_featured_articles(){ 
 	?> 
-	<h2>Featured</h2>
+	<div class="na-selector">
+		<span class="na-selector-title">
+			View:
+		</span>
+		<span class="na-tab na-tab-active">Featured</span>
+		<a href="<?php echo $_SERVER['PHP_SELF']; ?>?blm_news_articles=all" class="na-tab">All</a>
+	</div>
+	<div id="na-news-articles">
 	<?php
 	global $wpdb;
   	$table_name = $wpdb->prefix . "news_articles_table";
@@ -227,33 +411,40 @@ function display_featured_articles(){
 		if($news_article->na_article_url != "" && $news_article->na_feature == 1){
 		?>
 			<article class="news-article featured" itemscope itemtype="http://schema.org/Article">
-				<a href="<?php echo $news_article->na_article_url; ?>" class="clearfix" itemprop="url">
+				<a href="<?php echo $news_article->na_article_url; ?>" class="clearfix" target="_blank" itemprop="url">
 					<?php if($news_article->na_image_url != ""){
 						?>
-						<img src="<?php echo $news_article->na_image_url; ?>" class="publication" alt="<?php echo $news_article->na_publication; ?>" itemprop="image"/>
+						<span class="publication">
+							<img src="<?php echo $news_article->na_image_url; ?>" alt="<?php echo $news_article->na_publication; ?>" itemprop="image"/>
+						</span>
 						<?php 
 					}else{
 						?>
 						<span class="publication" itemprop="publisher">
-							<?php echo $news_article->na_publication; ?>
+							<?php echo str_replace("\\","",$news_article->na_publication); ?>
 						</span>
 						<?php
 					}
 					?>
 					<span class="news-article-content">
-						<span class="publish-date" itemprop="datePublished">
-							<?php 
-								$article_date = date_create($news_article->na_publish_date);
-								echo date_format($article_date,"F j, Y"); 
+						<?php if($news_article->na_publish_date != "0000-00-00"){
 							?>
-						</span>
+							<span class="publish-date" itemprop="datePublished">
+								<?php 
+									$article_date = date_create($news_article->na_publish_date);
+									echo date_format($article_date,"F j, Y"); 
+								?>
+							</span>
+							<?php
+						}
+						?>
 						<span class="title" itemprop="headline">
-							<?php echo $news_article->na_title; ?>
+							<?php echo str_replace("\\","",$news_article->na_title); ?>
 						</span>
 						<?php if($news_article->na_author != ""){
 							?>
 							<span class="author" itemprop="author">
-								<?php echo "by: ".$news_article->na_author; ?>
+								<?php echo "by: ".str_replace("\\","",$news_article->na_author); ?>
 							</span>
 							<?php
 						}
@@ -264,15 +455,22 @@ function display_featured_articles(){
 			<?php
 		}
 	}
+	?>
+	</div> <!-- #na-news-articles -->
+	<?php
 }
 
-
+/* Shortcode output if all articles is selected */
 function display_all_articles(){
-	/* use ob_start to convert HTML content to string */
-	?> 
-	<h2>
-		Everything
-	</h2>
+	?>
+	<div class="na-selector">
+		<span class="na-selector-title">
+			View:
+		</span>
+		<a href="<?php echo $_SERVER['PHP_SELF']; ?>" class="na-tab">Featured</a>
+		<span class="na-tab na-tab-active">All</span>
+	</div>
+	<div id="na-news-articles">
 	<?php
 	global $wpdb;
   	$table_name = $wpdb->prefix . "news_articles_table";
@@ -287,21 +485,21 @@ function display_all_articles(){
 		if($news_article->na_article_url != ""){
 		?>
 			<article class="news-article" itemscope itemtype="http://schema.org/Article">
-				<a href="<?php echo $news_article->na_article_url; ?>" itemprop="url">
+				<a href="<?php echo $news_article->na_article_url; ?>" target="_blank" itemprop="url">
 					<span class="title" itemprop="headline">
 						<?php 
-							$news_article_title = $news_article->na_title;
+							$news_article_title = str_replace("\\","",$news_article->na_title);
 							$condensed_title = strlen($news_article_title) > 70 ? substr($news_article_title,0,70)."..." : $news_article_title;
 							echo $condensed_title; 
 						?>
 					</span>
 					<span class="publication" itemprop="publisher">
-						<?php echo " - ".$news_article->na_publication; ?>
+						<?php echo " - ".str_replace("\\","",$news_article->na_publication); ?>
 					</span>
 					<span class="publication-date" itemprop="datePublished">
 						<?php 
 							$article_date = date_create($news_article->na_publish_date);
-							echo date_format($article_date,"n/j/Y"); 
+							echo "(".date_format($article_date,"n/j/Y").")"; 
 						?>
 					</span>
 				</a>
@@ -309,28 +507,8 @@ function display_all_articles(){
 			<?php
 		}
 	}
-	/* display result of ob_start */
-}
-/**
-Deactivation Hooks - occur when plugin is deactivated
-*/
-
-/**
-Uninstall Hooks - occur when plugin is deactivated
-*/
-register_uninstall_hook( __FILE__, 'uninstall_news_articles' );
-
-function uninstall_news_articles(){
-	/*
-	Drop $prefix>news_articles table
-	*/
-}
-
-function dev_alert($message){
 	?>
-	<script type="text/javascript">
-		alert("<?php echo $message; ?>");
-	</script>
+	</div> <!-- #na-news-articles -->
 	<?php
 }
 
